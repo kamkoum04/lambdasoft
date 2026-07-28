@@ -1,0 +1,318 @@
+---
+/**
+ * The close. The page opens on the night sea and ends on it, cropped tight to
+ * the glowing pool so it reads as a return rather than a repeat.
+ *
+ * Same constraint as the hero, inverted: the pool is the brightest thing in the
+ * photograph, so no text may sit on it. Content is held in the upper band while
+ * the light stays below, and the image is masked at the top so the section
+ * emerges from the page rather than starting at an edge.
+ *
+ * Two columns rather than a centred stack, and that is structural, not taste.
+ * The image is object-fit: cover on this section, so growing the section
+ * re-crops the photograph — the exact failure that moved the hero's horizon.
+ * Putting the form beside the copy spends width, which is free here, instead of
+ * height, which is not.
+ *
+ * The form has no destination yet (see FORM_ENDPOINT in src/site.ts) and is
+ * therefore inert on purpose: fields accept typing, submit is disabled, and a
+ * notice says so. A form that looks live and drops messages is worse than no
+ * form, because the visitor believes they made contact.
+ */
+import { Image } from 'astro:assets';
+import night from '../assets/night-water.jpg';
+import { site } from '../site';
+import { useTranslations } from '../i18n/utils';
+
+const t = useTranslations(Astro.currentLocale);
+
+/* The notice names files and identifiers. Folding it into one translated string
+   flattened the <code> spans, so they are reapplied here from a fixed token
+   list rather than being embedded as markup a translator has to preserve. */
+const CODE_TOKENS = ['FORM_ENDPOINT', 'src/site.ts', 'PLACEHOLDER_EMAIL', 'emailIsPlaceholder'];
+const noticeHtml = t.contact.noticeBody
+  .replace(/[&<>]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' })[c] as string)
+  .replace(new RegExp(`(${CODE_TOKENS.join('|')})`, 'g'), '<code>$1</code>');
+
+const fields = [
+  { id: 'name', name: 'name', label: t.contact.name, type: 'text', autocomplete: 'name' },
+  { id: 'email', name: 'email', label: t.contact.email, type: 'email', autocomplete: 'email' },
+] as const;
+---
+
+<section id="contact" class="contact">
+  <Image
+    class="contact__media"
+    src={night}
+    alt=""
+    widths={[900, 1440, 1920]}
+    sizes="100vw"
+    loading="lazy"
+  />
+
+  <div class="shell contact__inner">
+    <div class="contact__copy rise">
+      <h2>{t.contact.heading}</h2>
+      <p>{t.contact.intro}
+      </p>
+
+      <p class="contact__direct">
+        <span class="contact__direct-label">{t.contact.direct}</span>
+        <a class="contact__mail" href={`mailto:${site.email}`}>{site.email}</a>
+      </p>
+    </div>
+
+    <form
+      class="form rise"
+      data-anim-delay="120"
+      action={site.formIsLive ? site.formEndpoint : undefined}
+      method={site.formIsLive ? 'POST' : undefined}
+    >
+      {fields.map((field) => (
+        <p class="field">
+          <label class="field__label" for={field.id}>{field.label}</label>
+          <input
+            class="field__control"
+            id={field.id}
+            name={field.name}
+            type={field.type}
+            autocomplete={field.autocomplete}
+            required
+          />
+        </p>
+      ))}
+
+      <p class="field">
+        <label class="field__label" for="message">{t.contact.message}</label>
+        <textarea class="field__control" id="message" name="message" rows="3" required></textarea>
+      </p>
+
+      <button
+        class="cta form__send"
+        type="submit"
+        disabled={!site.formIsLive}
+        aria-describedby={site.formIsLive ? undefined : 'form-status'}
+      >
+        {t.contact.send}
+        <svg viewBox="0 0 24 24" aria-hidden="true" class="form__arrow">
+          <path d="M4 12h15m0 0-6-6m6 6-6 6" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" />
+        </svg>
+      </button>
+
+      {
+        !site.formIsLive && (
+          <p class="form__status" id="form-status" role="note">
+            <strong>{t.contact.noticeTitle}</strong> <Fragment set:html={noticeHtml} />
+          </p>
+        )
+      }
+    </form>
+  </div>
+</section>
+
+<style>
+  .contact {
+    position: relative;
+    isolation: isolate;
+    display: grid;
+    align-items: start;
+    /* tuned so the section lands at the height it had before the form went in:
+       the photo is cover-fitted here, so a change in height moves the pool */
+    padding-block: clamp(3.25rem, 6vw, 4.75rem) clamp(9rem, 18vw, 14rem);
+    overflow: hidden;
+  }
+
+  /* anchored to the bottom of the frame so the pool sits under the content, and
+     masked at both ends so the photograph emerges and dissolves rather than
+     starting and stopping on a line */
+  .contact__media {
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    inline-size: 100%;
+    block-size: 100%;
+    object-fit: cover;
+    object-position: 50% 96%;
+    opacity: 0.92;
+    mask-image: linear-gradient(180deg, transparent 0%, #000 32%, #000 90%, transparent 100%);
+    -webkit-mask-image: linear-gradient(180deg, transparent 0%, #000 32%, #000 90%, transparent 100%);
+  }
+
+  .contact__inner {
+    display: grid;
+    gap: var(--space-xl);
+    align-items: start;
+  }
+
+  @media (min-width: 56rem) {
+    .contact__inner {
+      grid-template-columns: minmax(0, 1fr) minmax(0, 26rem);
+      gap: clamp(2.5rem, 6vw, 5rem);
+    }
+  }
+
+  .contact__copy {
+    display: grid;
+    gap: var(--space-lg);
+  }
+
+  .contact__copy h2 {
+    font-size: clamp(2rem, 1.3rem + 2.2vw, 3rem);
+  }
+
+  .contact__copy p {
+    max-width: 46ch;
+    color: var(--ink-muted);
+    font-size: var(--text-lead);
+    line-height: 1.6;
+  }
+
+  .contact__direct {
+    display: grid;
+    gap: 0.35rem;
+  }
+
+  .contact__direct-label {
+    color: var(--ink-muted);
+    font-size: var(--text-sm);
+    opacity: 0.85;
+  }
+
+  .contact__mail {
+    font-size: clamp(1.15rem, 0.95rem + 0.9vw, 1.5rem);
+    font-weight: 600;
+    letter-spacing: -0.015em;
+    color: var(--ink);
+    text-decoration-line: underline;
+    text-decoration-thickness: 1px;
+    text-underline-offset: 0.24em;
+    text-decoration-color: rgb(var(--ring-ch) / 0.45);
+    overflow-wrap: anywhere;
+    transition:
+      color var(--dur-base) var(--ease-out-quart),
+      text-decoration-color var(--dur-base) var(--ease-out-quart);
+  }
+
+  .contact__mail:hover {
+    color: var(--ring);
+    text-decoration-color: var(--ring);
+  }
+
+  /* the panel is opaque, not frosted: it sits over the photograph, and a
+     translucent surface would take its contrast from whatever scrolled behind */
+  .form {
+    display: grid;
+    gap: 0.95rem;
+    padding: clamp(1.35rem, 2.4vw, 1.85rem);
+    border: 1px solid rgb(var(--glacier-ch) / 0.16);
+    border-radius: var(--radius-lg);
+    background: rgb(var(--panel-ch) / 0.86);
+  }
+
+  .field {
+    display: grid;
+    gap: 0.45rem;
+  }
+
+  /* real labels, not placeholders: placeholder text disappears the moment
+     someone starts typing, which is exactly when they need it */
+  .field__label {
+    color: var(--ink-muted);
+    font-size: var(--text-sm);
+    font-weight: 500;
+  }
+
+  .field__control {
+    inline-size: 100%;
+    padding: 0.7rem 0.85rem;
+    /* 0.42, not the 0.16 used on decorative tiles elsewhere. An empty field has
+       nothing but its border to say it is a field, so that border is a UI
+       boundary under WCAG 1.4.11 and owes 3:1 against the panel. At 0.18 it
+       measured 1.59:1 and the inputs read as faint rectangles. */
+    border: 1px solid rgb(var(--frost-ch) / 0.42);
+    border-radius: var(--radius-md);
+    background: rgb(var(--tile-ch) / 0.9);
+    color: var(--ink);
+    font-family: inherit;
+    font-size: 0.95rem;
+    line-height: 1.5;
+    transition:
+      border-color var(--dur-fast) var(--ease-out-quart),
+      background-color var(--dur-fast) var(--ease-out-quart);
+  }
+
+  .field__control:hover {
+    border-color: rgb(var(--frost-ch) / 0.62);
+  }
+
+  .field__control:focus-visible {
+    outline: 2px solid var(--ring);
+    outline-offset: 2px;
+    border-color: var(--ring);
+  }
+
+  textarea.field__control {
+    resize: vertical;
+    min-block-size: 5rem;
+  }
+
+  .form__send {
+    justify-self: start;
+    min-height: 2.9rem;
+    padding-inline: 1.5rem;
+    font-size: 0.95rem;
+  }
+
+  /* dimmed and non-interactive, and the notice below says why. The fields stay
+     usable so the shape of the thing is still legible. */
+  .form__send:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+    transform: none;
+  }
+
+  .form__arrow {
+    inline-size: 1.05rem;
+    block-size: 1.05rem;
+  }
+
+  .form__status {
+    padding: 0.7rem 0.85rem;
+    border: 1px dashed rgb(var(--glacier-ch) / 0.35);
+    border-radius: var(--radius-md);
+    color: var(--ink-muted);
+    font-size: 0.8125rem;
+    line-height: 1.55;
+  }
+
+  .form__status strong {
+    color: var(--ink);
+    font-weight: 600;
+  }
+
+  .form__status code {
+    font-family: ui-monospace, 'SFMono-Regular', menlo, monospace;
+    font-size: 0.88em;
+    color: var(--frost);
+  }
+
+  /* Narrow frames make the image box portrait, and `cover` answers that by
+     zooming until only a slice of the pool survives. Trading vertical space for
+     a wider aspect keeps the light in frame. */
+  @media (max-width: 34rem) {
+    .contact {
+      padding-block-end: 7rem;
+    }
+
+    .contact__media {
+      object-position: 50% 88%;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .contact__mail,
+    .field__control {
+      transition: none;
+    }
+  }
+</style>

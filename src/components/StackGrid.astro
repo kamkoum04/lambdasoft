@@ -1,0 +1,239 @@
+---
+/**
+ * The technology grid: brick-offset rows of frosted tiles.
+ *
+ * Colour is the constraint that shaped this. Measured against a dark frosted
+ * tile, eleven of the brand colours clear 3:1 comfortably, but Next.js
+ * (#000000) and GitHub (#181717) land at 1.21:1 and 1.03:1 and simply vanish.
+ * Both brands publish a white variant for dark backgrounds and their guidelines
+ * require it, so those two are set in frost rather than recoloured arbitrarily.
+ * AWS is absent from simple-icons entirely, Amazon having had it withdrawn over
+ * trademark policy, so it appears as a wordmark. Never redraw a protected mark.
+ *
+ * The empty tiles are deliberate. A grid with every slot filled becomes a logo
+ * wall; the gaps are what give it rhythm and keep it from reading as padding.
+ */
+import icons from '../stack-icons.json';
+import { useTranslations } from '../i18n/utils';
+
+const t = useTranslations(Astro.currentLocale);
+
+type Cell = { kind: 'icon'; label: string } | { kind: 'gap' } | { kind: 'word'; label: string } | { kind: 'own' };
+
+const byLabel = Object.fromEntries(icons.map((i) => [i.label, i]));
+
+const rows: Cell[][] = [
+  [
+    { kind: 'gap' },
+    { kind: 'icon', label: 'React' },
+    { kind: 'word', label: 'AWS' },
+    { kind: 'icon', label: 'Docker' },
+    { kind: 'icon', label: 'Kubernetes' },
+    { kind: 'gap' },
+    { kind: 'icon', label: 'Terraform' },
+    { kind: 'icon', label: 'PostgreSQL' },
+  ],
+  [
+    { kind: 'icon', label: 'Google Cloud' },
+    { kind: 'gap' },
+    { kind: 'icon', label: 'Next.js' },
+    { kind: 'own' },
+    { kind: 'icon', label: 'Stripe' },
+    { kind: 'gap' },
+    { kind: 'icon', label: 'MongoDB' },
+    { kind: 'icon', label: 'GitHub' },
+  ],
+  [
+    { kind: 'gap' },
+    { kind: 'icon', label: 'FastAPI' },
+    { kind: 'icon', label: 'Vault' },
+    { kind: 'gap' },
+    { kind: 'icon', label: 'NestJS' },
+    { kind: 'icon', label: 'Tailwind CSS' },
+    { kind: 'gap' },
+    { kind: 'icon', label: 'Spring Boot' },
+  ],
+];
+
+---
+
+<div class="stack">
+  <div class="shell">
+    <div class="grid rise" data-anim-delay="240" role="list" aria-label={t.hero.stackLabel}>
+      {
+        rows.map((row, r) => (
+          <div class:list={['grid__row', r % 2 === 1 && 'grid__row--offset']}>
+            {row.map((cell) =>
+              cell.kind === 'gap' ? (
+                <span class="tile tile--gap" aria-hidden="true" />
+              ) : cell.kind === 'own' ? (
+                <span class="tile tile--own" role="listitem" data-name="lambdasoft">
+                  <img class="tile__glyph" src={`${import.meta.env.BASE_URL}brand/mark.webp`} alt="" width="1600" height="1536" decoding="async" />
+                  <span class="tile__sr">lambdasoft</span>
+                </span>
+              ) : cell.kind === 'word' ? (
+                <span class="tile" role="listitem" data-name={cell.label}>
+                  <span class="tile__word">{cell.label}</span>
+                </span>
+              ) : (
+                <span class="tile" role="listitem" data-name={cell.label}>
+                  <svg class="tile__icon" viewBox="0 0 24 24" role="img" aria-label={cell.label}>
+                    <path d={byLabel[cell.label].d} fill={byLabel[cell.label].hex} />
+                  </svg>
+                </span>
+              )
+            )}
+          </div>
+        ))
+      }
+    </div>
+
+  </div>
+</div>
+
+<style>
+  .stack {
+    inline-size: 100%;
+  }
+
+  .grid {
+    /* declared here, not on .tile: the offset row needs to read it too, and a
+       custom property set on a child is invisible to its parent */
+    --tile: clamp(3.1rem, 5.6vw, 4.25rem);
+    --tile-gap: clamp(0.5rem, 1vw, 0.75rem);
+    display: grid;
+    gap: var(--tile-gap);
+    justify-items: center;
+  }
+
+  .grid__row {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: var(--tile-gap);
+  }
+
+  /* the brick offset: half a tile plus half a gap */
+  .grid__row--offset {
+    margin-inline-start: calc(var(--tile) + var(--tile-gap));
+  }
+
+  .tile {
+    position: relative;
+    inline-size: var(--tile);
+    block-size: var(--tile);
+    display: grid;
+    place-items: center;
+    border-radius: clamp(0.75rem, 1.4vw, 1.1rem);
+    /* Tinted, not frosted. Twelve blurred surfaces over the brightest part of a
+       photograph cost real frames, and worse, a translucent tile takes on
+       whatever is behind it: the bottom row sat over the lit pool and washed
+       out while the top row stayed legible. An opaque tint renders the same
+       everywhere, so the grid reads as one material. */
+    background: rgb(var(--tile-ch) / 0.74);
+    border: 1px solid rgb(var(--frost-ch) / 0.16);
+    box-shadow: inset 0 1px 0 rgb(var(--ink-ch) / 0.1);
+    transition:
+      border-color var(--dur-base) var(--ease-out-quart),
+      background-color var(--dur-base) var(--ease-out-quart),
+      transform var(--dur-base) var(--ease-out-quint);
+  }
+
+  .tile:not(.tile--gap):hover {
+    transform: translateY(-2px);
+    border-color: rgb(var(--ring-ch) / 0.5);
+    background: rgb(10 26 56 / 0.82);
+  }
+
+  /* spacers: present as rhythm, not as content */
+  .tile--gap {
+    background: rgb(var(--tile-ch) / 0.42);
+    border-color: rgb(var(--frost-ch) / 0.07);
+    box-shadow: none;
+  }
+
+  /* the name on hover. Purely an enhancement: every tile already carries an
+     accessible name, so nothing depends on the tooltip appearing. */
+  .tile[data-name]::after {
+    content: attr(data-name);
+    position: absolute;
+    inset-block-end: calc(100% + 0.55rem);
+    inset-inline-start: 50%;
+    z-index: var(--z-content);
+    padding: 0.3rem 0.55rem;
+    border-radius: 8px;
+    background: rgb(var(--void-ch) / 0.92);
+    border: 1px solid rgb(var(--frost-ch) / 0.18);
+    color: var(--frost);
+    font-size: 0.72rem;
+    font-weight: 600;
+    letter-spacing: 0.005em;
+    line-height: 1;
+    white-space: nowrap;
+    pointer-events: none;
+    opacity: 0;
+    transform: translate(-50%, 4px);
+    transition:
+      opacity var(--dur-fast) var(--ease-out-quart),
+      transform var(--dur-fast) var(--ease-out-quart);
+  }
+
+  .tile[data-name]:hover::after {
+    opacity: 1;
+    transform: translate(-50%, 0);
+  }
+
+  .tile__sr {
+    position: absolute;
+    inline-size: 1px;
+    block-size: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+
+  .tile__icon {
+    inline-size: 48%;
+    block-size: 48%;
+  }
+
+  .tile__word {
+    font-size: clamp(0.7rem, 1.1vw, 0.85rem);
+    font-weight: 800;
+    letter-spacing: -0.02em;
+    color: #ff9d2f; /* AWS orange, lifted for legibility on the dark tile */
+  }
+
+  /* lambdasoft sits among the tools, lit but deliberately not the loudest thing
+     on the grid: being beside AWS is not a claim of peer status */
+  .tile--own {
+    /* opaque for the same reason as the rest: this tile sits dead centre, over
+       the brightest point of the pool, where a translucent tint went to white */
+    background: rgb(10 40 76 / 0.88);
+    border-color: rgb(var(--ring-ch) / 0.45);
+  }
+
+  .tile__glyph {
+    inline-size: 52%;
+    block-size: auto;
+  }
+
+  /* on narrow screens the stagger and the spacers both stop helping: the rows
+     reflow, so an offset row just looks misaligned */
+  @media (max-width: 48rem) {
+    .grid__row--offset {
+      margin-inline-start: 0;
+    }
+
+    .tile--gap {
+      display: none;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .tile,
+    .tile[data-name]::after {
+      transition: none;
+    }
+  }
+</style>

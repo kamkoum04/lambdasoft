@@ -1,0 +1,264 @@
+---
+/**
+ * What we do: four service cards, each with a 3D icon.
+ *
+ * The cards carry no icon. A 3D icon pack was tried and rejected: sourced
+ * renders never match a palette they were not made for, and with a background
+ * image in play the artwork was competing with it rather than supporting it.
+ * The glowing arc is this section's visual; the cards are containers.
+ *
+ * The background merges rather than sits on top. The source image is pure
+ * black everywhere except the arc, so mix-blend-mode: screen drops the black
+ * entirely and only the light adds onto the page. A mask fades both ends, so
+ * there is no edge where the section starts or stops.
+ *
+ * Six services were consolidated to four so the row resolves cleanly, matching
+ * the reference layout. Web, mobile and desktop live together under
+ * engineering, which is also how a client tends to think about them.
+ *
+ * There are deliberately no "Learn more" links. The reference has them, but
+ * they would point at four detail pages that do not exist, and four dead links
+ * is worse than none.
+ */
+import { Image } from 'astro:assets';
+import arcGlow from '../assets/arc-glow.jpg';
+import { useTranslations } from '../i18n/utils';
+
+/**
+ * Bento order, not reading order by accident: the tile that gets the space is
+ * the one the studio leads with, and DOM order matches what the eye hits first
+ * so a screen reader and a sighted reader get the same emphasis.
+ *
+ * Engineering holds the large tile. It earns the room with a drawing rather
+ * than more prose: the card already says what it needs to, and padding a tile
+ * with extra sentences to fill a grid cell is how service copy turns to filler.
+ */
+const t = useTranslations(Astro.currentLocale);
+
+const line = 'rgb(var(--glacier-ch) / 0.5)';
+const faint = 'rgb(var(--glacier-ch) / 0.24)';
+const glass = 'rgb(var(--frost-ch) / 0.05)';
+const lit = 'rgb(var(--ring-ch) / 0.92)';
+const litFill = 'rgb(var(--ring-ch) / 0.14)';
+
+/* Same drawing language as the partner grid: thin strokes, one lit element.
+   A desktop and a phone running one interface, which is the claim the card
+   makes in words. */
+const devices = `<svg viewBox="0 0 260 132" fill="none" role="img" aria-label="{ALT}">
+  <rect x="6" y="8" width="176" height="104" rx="7" fill="${glass}" stroke="${line}"/>
+  <path d="M6 30h176" stroke="${faint}"/>
+  <circle cx="18" cy="19" r="2.6" stroke="${faint}"/>
+  <circle cx="28" cy="19" r="2.6" stroke="${faint}"/>
+  <circle cx="38" cy="19" r="2.6" stroke="${faint}"/>
+
+  <rect x="18" y="42" width="52" height="58" rx="4" stroke="${faint}"/>
+  <path d="M26 54h36M26 64h28M26 74h34" stroke="${faint}" stroke-linecap="round"/>
+
+  <rect x="82" y="42" width="88" height="34" rx="4" fill="${litFill}" stroke="${lit}"/>
+  <path d="M92 54h40M92 64h58" stroke="${lit}" stroke-linecap="round" opacity="0.75"/>
+  <path d="M82 86h88M82 96h62" stroke="${faint}" stroke-linecap="round"/>
+
+  <path d="M94 112v11M72 123h44" stroke="${line}" stroke-linecap="round"/>
+
+  <rect x="196" y="30" width="58" height="98" rx="9" fill="${glass}" stroke="${line}"/>
+  <path d="M216 38h18" stroke="${faint}" stroke-linecap="round"/>
+  <rect x="204" y="50" width="42" height="26" rx="4" fill="${litFill}" stroke="${lit}"/>
+  <path d="M212 60h22" stroke="${lit}" stroke-linecap="round" opacity="0.75"/>
+  <path d="M204 86h42M204 96h30M204 106h38" stroke="${faint}" stroke-linecap="round"/>
+</svg>`;
+
+const spans: Record<string, string | undefined> = {
+  engineering: 'wide tall',
+  security: 'wide',
+};
+
+const services = (['engineering', 'ai', 'cloud', 'security'] as const).map((key) => ({
+  ...t.build.services[key],
+  span: spans[key],
+  art: key === 'engineering' ? devices.replace('{ALT}', t.art.devices) : undefined,
+}));---
+
+<section id="build" class="build">
+  <Image class="build__glow" src={arcGlow} alt="" widths={[900, 1440, 1920]} sizes="100vw" loading="lazy" />
+
+  <div class="shell">
+    <header class="build__head rise">
+      <h2>{t.build.heading}</h2>
+
+      <p>{t.build.intro}
+      </p>
+    </header>
+
+    <ul class="cards">
+      {
+        services.map((service, i) => (
+          <li class="card rise" data-span={service.span} data-anim-delay={60 + i * 55}>
+            <h3 class="card__name">{service.name}</h3>
+            <p class="card__body">{service.body}</p>
+            {service.art && <div class="card__art" set:html={service.art} />}
+          </li>
+        ))
+      }
+    </ul>
+  </div>
+</section>
+
+<style>
+  .build {
+    position: relative;
+    isolation: isolate;
+    padding-block: clamp(5rem, 9vw, 8rem);
+  }
+
+  /* Screen blending is what makes this merge instead of sit on top: the source
+     is pure black outside the arc, and screen drops black to nothing, so only
+     the light lands on the page. The mask then dissolves both ends, so the
+     section has no top or bottom edge. */
+  .build__glow {
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    inline-size: 100%;
+    block-size: 100%;
+    object-fit: cover;
+    /* The arc's crest must land between the intro and the cards. Centred, it
+       ran straight through the paragraph and dropped it to 3.5:1. Lower values
+       reveal more of the image's black top, pushing the arc down the frame. */
+    object-position: 50% 8%;
+    mix-blend-mode: screen;
+    opacity: 0.85;
+    pointer-events: none;
+    mask-image: linear-gradient(180deg, transparent 0%, #000 22%, #000 76%, transparent 100%);
+    -webkit-mask-image: linear-gradient(180deg, transparent 0%, #000 22%, #000 76%, transparent 100%);
+  }
+
+  .build__head {
+    display: grid;
+    justify-items: center;
+    gap: var(--space-md);
+    text-align: center;
+    /* wide enough that the arc has somewhere to cross without hitting type */
+    margin-block-end: clamp(4.5rem, 8vw, 6.5rem);
+  }
+
+  .build__head h2 {
+    font-size: clamp(2rem, 1.2rem + 2.6vw, 3.1rem);
+    line-height: 1.12;
+  }
+
+  .build__head p {
+    color: var(--ink-muted);
+    max-width: 54ch;
+    font-size: var(--text-lead);
+    line-height: 1.6;
+  }
+
+  /* Bento: tile size carries the emphasis, so the grid says what matters before
+     a word is read. Stacked below 44rem, paired in the middle, four columns
+     once there is room for the full arrangement. */
+  .cards {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: grid;
+    gap: var(--space-md);
+    grid-template-columns: 1fr;
+  }
+
+  @media (min-width: 44rem) {
+    .cards {
+      grid-template-columns: repeat(2, 1fr);
+    }
+
+    .card[data-span~='wide'] {
+      grid-column: span 2;
+    }
+  }
+
+  @media (min-width: 64rem) {
+    .cards {
+      grid-template-columns: repeat(4, 1fr);
+      /* explicit rows keep the tall tile and the two beside it the same height
+         instead of letting the longest body decide */
+      grid-auto-rows: minmax(11.5rem, auto);
+    }
+
+    .card[data-span~='wide'] {
+      grid-column: span 2;
+    }
+
+    .card[data-span~='tall'] {
+      grid-row: span 2;
+    }
+  }
+
+  .card {
+    position: relative;
+    display: grid;
+    align-content: start;
+    gap: var(--space-sm);
+    padding: var(--space-lg);
+    border: 1px solid rgb(var(--glacier-ch) / 0.13);
+    border-radius: var(--radius-lg);
+    /* frosted rather than flat, so the arc reads faintly through the card and
+       the section holds together as one image */
+    background: rgb(var(--panel-ch) / 0.82);
+    overflow: hidden;
+    transition: border-color var(--dur-base) var(--ease-out-quart);
+  }
+
+  .card:hover {
+    border-color: rgb(var(--ring-ch) / 0.34);
+  }
+
+  .card__name {
+    color: var(--ink);
+    font-size: 1.125rem;
+    font-weight: 600;
+    line-height: 1.25;
+    letter-spacing: -0.012em;
+    text-wrap: balance;
+  }
+
+  .card__body {
+    color: var(--ink-muted);
+    font-size: var(--text-sm);
+    line-height: 1.65;
+  }
+
+  /* The lead tile earns its space rather than just occupying it: a larger
+     title, a second paragraph, and a warmer edge. Without those it reads as a
+     layout accident. */
+  .card[data-span~='tall'] {
+    border-color: rgb(var(--ring-ch) / 0.28);
+    background: rgb(4 16 44 / 0.82);
+    /* four children; the last row absorbs the slack so the list can sit on the
+       floor of the tile. align-content: start alone would leave it mid-air. */
+    grid-template-rows: auto auto auto 1fr;
+  }
+
+  .card[data-span~='tall'] .card__name {
+    font-size: clamp(1.25rem, 1.05rem + 0.6vw, 1.5rem);
+  }
+
+  /* the drawing sits on the floor of the tile, so the space the bento grants
+     this card is used at both ends rather than trailing off */
+  .card__art {
+    align-self: end;
+    margin-block-start: var(--space-md);
+  }
+
+  .card__art :global(svg) {
+    inline-size: 100%;
+    block-size: auto;
+    max-block-size: 15rem;
+    display: block;
+  }
+
+
+  @media (prefers-reduced-motion: reduce) {
+    .card {
+      transition: none;
+    }
+  }
+</style>

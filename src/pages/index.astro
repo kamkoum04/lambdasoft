@@ -1,0 +1,17 @@
+---
+import Base from '../layouts/Base.astro';
+import Hero from '../components/Hero.astro';
+import WhyPartner from '../components/WhyPartner.astro';
+import WhatWeBuild from '../components/WhatWeBuild.astro';
+import Contact from '../components/Contact.astro';
+import { useTranslations } from '../i18n/utils';
+
+const t = useTranslations(Astro.currentLocale);
+---
+
+<Base title={t.meta.title} description={t.meta.description}>
+  <Hero />
+  <WhyPartner />
+  <WhatWeBuild />
+  <Contact />
+</Base>

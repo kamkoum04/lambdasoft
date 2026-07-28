@@ -1,0 +1,49 @@
+<!doctype html><meta charset=utf-8><title>shoot</title>
+<style>html,body{margin:0;background:#ff00ff}iframe{border:0;display:block}</style>
+<iframe id=f></iframe>
+<script>
+const q=new URLSearchParams(location.search);
+const W=+(q.get('w')||1440), H=+(q.get('h')||900), Y=+(q.get('y')||0);
+const f=document.getElementById('f');
+f.style.width=W+'px'; f.style.height=H+'px'; f.src=q.get('u')||'/';
+f.onload=()=>{const d=f.contentDocument,w=f.contentWindow;
+ d.documentElement.style.scrollBehavior='auto';
+ // Trap 1 — async decoding paints late; has twice produced a phantom defect.
+ [...d.images].forEach(i=>{i.loading='eager'; i.decoding='sync'; i.src=i.src;});
+ // Trap 2 — headless Chrome on Linux clamps --window-size to ~500px, so the
+ // iframe fixes the viewport and clientWidth is read back as proof.
+ // Trap 3 — the bar's data-scrolled is set by an IntersectionObserver, and
+ // Chrome screenshots on idle. A fixed delay does NOT fix this: it is a race,
+ // and it fired on a different frame each run (103k px across the bar). So wait
+ // for QUIESCENCE — poll until the attribute stops changing — rather than for a
+ // duration. Nudging the scroll first forces the observer to re-evaluate near
+ // capture instead of leaving it to have fired at some unknown earlier point.
+ const bar=()=>d.querySelector('[data-bar]')?.hasAttribute('data-scrolled')??null;
+ // Ground truth for the wait, taken from geometry — the same predicate Nav's
+ // observer uses. Waiting for the attribute to STOP CHANGING was not enough:
+ // if the observer has not fired at all, the wrong value is stable too, and
+ // that produced a 1-in-4 flake of ~57k pixels across the bar. Wait until the
+ // attribute AGREES with geometry, and fail loudly if it never does.
+ const truth=()=>{const s=d.querySelector('[data-hero-end]');
+   return s?s.getBoundingClientRect().top<0:null;};
+ let n=0;
+ const settle=()=>{w.scrollTo(0,Y); if(++n<25) setTimeout(settle,40); else nudge();};
+ const nudge=()=>{ w.scrollTo(0,Y+1); setTimeout(()=>{ w.scrollTo(0,Y); setTimeout(stabilise,900); },120); };
+ let spins=0, agreed=0;
+ const stabilise=()=>{
+   const want=truth(), got=bar();
+   if(want===null || want===got) agreed++; else agreed=0;
+   spins++;
+   if(agreed>=12) return report(true);
+   if(spins>240) return report(false);  // never agreed — capture.sh fails the run
+   setTimeout(stabilise,25);
+ };
+ const report=(ok)=>{ setTimeout(()=>{
+   const imgs=[...d.images];
+   document.title=JSON.stringify({vw:d.documentElement.clientWidth,
+     page:d.body.scrollHeight, y:Math.round(w.scrollY), scrolled:bar(), want:truth(),
+     converged:ok, dec:imgs.filter(i=>i.complete&&i.naturalWidth>0).length+'/'+imgs.length});
+ },400); };
+ settle();
+};
+</script>

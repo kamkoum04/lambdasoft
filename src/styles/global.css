@@ -1,0 +1,399 @@
+/* ==========================================================================
+   lambdasoft: tokens and base
+   Dark register. Colours are sampled from src/assets/night-water.jpg so the
+   interface and the photograph read as one surface.
+   ========================================================================== */
+
+:root {
+  /* --- colour ----------------------------------------------------------- */
+  /* sampled from the photograph */
+  --void: #02081c; /* the sky at the top of the frame: the page background */
+  --deep: #05122c; /* mid sky, used for raised surfaces */
+  --ring: #75d1ff; /* the glowing ring on the water */
+  --glow: #cbffff; /* the brightest point of the glow */
+
+  /* committed brand ramp */
+  --survey-navy: #03045e;
+  --ridge-blue: #0077b6;
+  --signal-cyan: #00b4d8;
+  --glacier: #90e0ef;
+  --frost: #caf0f8;
+
+  /* Measured contrast against --void (#02081C):
+       white ................ 19.92  AA body
+       frost   #CAF0F8 ...... 16.44  AA body
+       glacier #90E0EF ...... 13.37  AA body
+       ring    #75D1FF ...... 11.69  AA body
+       cyan    #00B4D8 ....... 8.08  AA body
+       ridge   #0077B6 ....... 4.09  large text and non-text only
+     Over the photograph the effective background is lighter than --void, so
+     the top-52% safe zone is what actually governs. See Hero.astro.          */
+
+  --ink: #ffffff;
+  --ink-muted: #9fc4dd; /* 10.83 on --void: the dimmest permitted body ink */
+  --ink-soft: var(--frost);
+
+  /* Raised surfaces. These two tints were spelled out as raw rgb() triples in
+     five places before they had names; --deep was declared for this job and
+     used zero times. */
+  --panel: #030b20;
+  --tile: #040e24;
+
+  /* Channel triples.
+     A custom property cannot be used inside rgb(r g b / a), so every alpha
+     variant of a token used to be written out by hand — 57 of them, which meant
+     changing an accent updated 9 usages and left 18 stale. These exist so an
+     alpha variant can reference the authority: rgb(var(--ring-ch) / .45).
+     checks/contrast.test.mjs asserts each one still equals its hex sibling, so
+     the pair cannot drift. */
+  --void-ch: 2 8 28;
+  --ring-ch: 117 209 255;
+  --glacier-ch: 144 224 239;
+  --frost-ch: 202 240 248;
+  --ink-ch: 255 255 255;
+  --panel-ch: 3 11 32;
+  --tile-ch: 4 14 36;
+
+  /* --- shape ------------------------------------------------------------ */
+  --radius-sm: 10px;
+  --radius-md: 14px;
+  --radius-lg: 20px;
+  --radius-pill: 999px;
+
+  /* --- space: 4pt base --------------------------------------------------- */
+  --space-2xs: 0.25rem;
+  --space-xs: 0.5rem;
+  --space-sm: 0.75rem;
+  --space-md: 1rem;
+  --space-lg: 1.5rem;
+  --space-xl: 2rem;
+  --space-2xl: 3rem;
+  --space-3xl: 4rem;
+
+  --gutter: clamp(1.25rem, 5vw, 4rem);
+  --shell: 72rem;
+  --bar-height: 4.5rem;
+
+  /* --- type -------------------------------------------------------------- */
+  /* Manrope: open apertures, softly cut terminals. Modern without the
+     Inter hardness, and off the saturated-default list. */
+  --font-sans: 'Manrope Variable', system-ui, sans-serif;
+
+  --text-display: clamp(2.15rem, 1.3rem + 4vw, 4.5rem);
+  --text-lead: clamp(1.05rem, 0.98rem + 0.35vw, 1.25rem);
+  --text-body: 1.0625rem;
+  --text-sm: 0.9375rem;
+
+  /* --- motion ------------------------------------------------------------ */
+  --ease-out-quint: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-out-quart: cubic-bezier(0.25, 1, 0.5, 1);
+  --dur-fast: 160ms;
+  --dur-base: 280ms;
+  --dur-slow: 900ms;
+
+  /* --- depth: semantic, never arbitrary ---------------------------------- */
+  --z-media: 1;
+  --z-content: 2;
+  --z-bar: 10;
+}
+
+/* ==========================================================================
+   reset
+   ========================================================================== */
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+* {
+  margin: 0;
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+  scroll-behavior: smooth;
+  scroll-padding-top: var(--bar-height);
+  background: var(--void);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+}
+
+body {
+  background: var(--void);
+  color: var(--ink-soft);
+  font-family: var(--font-sans);
+  font-size: var(--text-body);
+  font-weight: 400;
+  /* light type on a dark ground reads lighter than it measures, so it gets
+     more leading and a touch of positive tracking */
+  line-height: 1.7;
+  letter-spacing: 0.005em;
+  font-kerning: normal;
+  font-optical-sizing: auto;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+img,
+svg,
+picture {
+  display: block;
+  max-width: 100%;
+}
+
+h1,
+h2 {
+  color: var(--ink);
+  font-weight: 700;
+  line-height: 1.1;
+  letter-spacing: -0.02em; /* floor is -0.04em; Manrope needs little */
+  text-wrap: balance;
+}
+
+p {
+  text-wrap: pretty;
+}
+
+a {
+  color: inherit;
+}
+
+::selection {
+  background: var(--signal-cyan);
+  color: var(--void);
+}
+
+/* ==========================================================================
+   focus: never removed, always visible against the dark
+   ========================================================================== */
+
+:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 3px;
+  border-radius: 4px;
+}
+
+/* ==========================================================================
+   layout primitives
+   ========================================================================== */
+
+.shell {
+  width: 100%;
+  max-width: var(--shell);
+  margin-inline: auto;
+  padding-inline: var(--gutter);
+}
+
+/* ==========================================================================
+   actions
+
+   No filled controls. A solid lozenge stamped onto a cinematic photograph
+   always reads as pasted on, however well it is styled. The action is type
+   instead: white, with a rule under the label and an arrow beside it.
+
+   The rule is present at rest, not only on hover. A bare text link that gives
+   no signal until you point at it is a discoverability failure, and hover does
+   not exist on touch at all.
+   ========================================================================== */
+
+.action {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.65rem;
+  /* keeps the touch target at 44px even though the type is smaller */
+  min-height: 44px;
+  color: var(--ink);
+  font-family: inherit;
+  font-size: 1.0625rem;
+  font-weight: 600;
+  letter-spacing: 0.005em;
+  text-decoration: none;
+  cursor: pointer;
+  background: none;
+  border: 0;
+  padding: 0;
+}
+
+.action__label {
+  position: relative;
+  padding-block-end: 0.3rem;
+}
+
+.action__label::after {
+  content: '';
+  position: absolute;
+  inset-inline: 0;
+  inset-block-end: 0;
+  height: 1px;
+  background: currentColor;
+  opacity: 0.4;
+  transition:
+    opacity var(--dur-base) var(--ease-out-quart),
+    background-color var(--dur-base) var(--ease-out-quart);
+}
+
+.action:hover .action__label::after {
+  opacity: 1;
+  background: var(--ring);
+}
+
+.action__arrow {
+  width: 1.05em;
+  height: 1.05em;
+  flex: none;
+  transition: transform var(--dur-base) var(--ease-out-quint);
+}
+
+.action:hover .action__arrow {
+  transform: translateX(4px);
+}
+
+.action:active .action__arrow {
+  transform: translateX(2px);
+}
+
+/* the bar's action is the same object one step quieter, so the hero's stays
+   unambiguously primary */
+.action--sm {
+  font-size: var(--text-sm);
+  font-weight: 500;
+  color: var(--ink-muted);
+  transition: color var(--dur-fast) var(--ease-out-quart);
+}
+
+.action--sm:hover {
+  color: var(--ink);
+}
+
+.action--sm .action__label::after {
+  opacity: 0.28;
+}
+
+/* --------------------------------------------------------------------------
+   the hero call to action
+
+   Frosted rather than filled: the photograph shows through it, so it belongs
+   to the scene instead of sitting on top of it. No gradient, no glow, no gloss.
+   The border carries a real opacity because it is the control's boundary and
+   has to clear 3:1 against the sky, not because it is decorative.
+   -------------------------------------------------------------------------- */
+
+.cta {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.7rem;
+  min-height: 3.25rem;
+  padding: 0.95rem 1.9rem;
+  border-radius: var(--radius-pill);
+  font-family: inherit;
+  font-size: 1rem;
+  font-weight: 600;
+  letter-spacing: 0.005em;
+  color: var(--ink);
+  text-decoration: none;
+  /* French labels run ~20% longer than English and "Nous ecrire" wrapped inside
+     the pill, deforming it. The pill sizes to its label; it never reflows it. */
+  white-space: nowrap;
+  cursor: pointer;
+  background: rgb(202 240 248 / 0.12);
+  border: 1px solid rgb(202 240 248 / 0.62);
+  backdrop-filter: blur(16px) saturate(120%);
+  /* a single hairline along the top edge: a surface catching light from above */
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.18);
+  transition:
+    background-color var(--dur-base) var(--ease-out-quart),
+    border-color var(--dur-base) var(--ease-out-quart),
+    transform var(--dur-base) var(--ease-out-quint);
+}
+
+.cta:hover {
+  background: rgb(202 240 248 / 0.17);
+  border-color: rgb(117 209 255 / 0.72);
+  transform: translateY(-1px);
+}
+
+.cta:active {
+  transform: translateY(0);
+  background: rgb(202 240 248 / 0.12);
+}
+
+.cta__arrow {
+  width: 1.05em;
+  height: 1.05em;
+  flex: none;
+  transition: transform var(--dur-base) var(--ease-out-quint);
+}
+
+.cta:hover .cta__arrow {
+  transform: translateX(4px);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cta,
+  .cta__arrow {
+    transition: none;
+  }
+}
+
+/* ==========================================================================
+   entrance: enhances content that is already visible.
+   The hidden state is only applied once we know we can remove it.
+   ========================================================================== */
+
+[data-anim-armed] .rise {
+  opacity: 0;
+  transform: translateY(16px);
+}
+
+[data-anim-armed] .rise.is-in {
+  opacity: 1;
+  transform: none;
+  transition:
+    opacity var(--dur-slow) var(--ease-out-quart),
+    transform var(--dur-slow) var(--ease-out-quint);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  [data-anim-armed] .rise,
+  [data-anim-armed] .rise.is-in {
+    opacity: 1;
+    transform: none;
+    transition: none;
+  }
+
+  .btn,
+  .btn__arrow {
+    transition: none;
+  }
+}
+
+/* ==========================================================================
+   skip link
+   ========================================================================== */
+
+.skip-link {
+  position: absolute;
+  left: var(--space-md);
+  top: var(--space-md);
+  z-index: var(--z-bar);
+  padding: 0.75rem 1.15rem;
+  background: var(--frost);
+  color: var(--void);
+  font-size: var(--text-sm);
+  font-weight: 600;
+  border-radius: var(--radius-sm);
+  text-decoration: none;
+  transform: translateY(-180%);
+  transition: transform var(--dur-base) var(--ease-out-quart);
+}
+
+.skip-link:focus-visible {
+  transform: none;
+}

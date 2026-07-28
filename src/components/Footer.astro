@@ -1,0 +1,370 @@
+---
+/**
+ * The footer carries the orbit field.
+ *
+ * The source wallpaper shipped with a DigitalOcean logo in the bottom-right
+ * corner. It is removed in src/assets/footer-orbit.jpg, and that is not a
+ * cosmetic edit: another company's trademark sitting in your own footer states
+ * a partnership that does not exist. If this asset is ever re-exported from the
+ * original, remove it again.
+ *
+ * NO TEXT SITS ON THE IMAGE. That is an invariant, not a preference.
+ * The orbit field contains bright ring arcs (and, in the source, ~1090 near-
+ * specular pixels). Measured against the true worst background pixel under each
+ * label, text over the field ran 1.92:1 for the colophon and 2.99:1 for the
+ * section links. No scrim alpha fixes that: any value dark enough to make the
+ * text safe erases the image, which defeats having it. So the content sits on
+ * flat --void and the field is a separate band BELOW it.
+ *
+ * An earlier version measured this with a 99.5th-percentile background sample,
+ * which trimmed away exactly the pixels that were failing and reported a clean
+ * 5.37:1. Measure the maximum, not a percentile, whenever text is over imagery.
+ *
+ * The image runs at full opacity under a page-coloured scrim rather than being
+ * masked, so the band's top row is byte-identical to --void. See the scrim rule
+ * for why the original linear-gradient mask produced a visible split.
+ *
+ * Deliberately NO closing call to action. The contact section sits directly
+ * above this, so a "let's talk" headline here would be the second invitation
+ * inside one screen of scroll. The footer's job is to return things to a reader
+ * who came looking: the sections, the address, the language, and what the site
+ * is made of. Nothing here is invented — no client logos, no testimonials, no
+ * newsletter without a publication, no availability line nobody will maintain.
+ */
+import { Image } from 'astro:assets';
+import chevron from '../assets/footer-chevron.jpg';
+import { site } from '../site';
+import { useTranslations, langOf, pathFor, languages, locales } from '../i18n/utils';
+
+const t = useTranslations(Astro.currentLocale);
+const lang = langOf(Astro.currentLocale);
+const here = Astro.url.pathname;
+const year = new Date().getFullYear();
+---
+
+<footer class="foot">
+  <Image class="foot__chevron" src={chevron} alt="" widths={[720, 1100, 1600]} sizes="60vw" loading="lazy" />
+
+  <div class="shell foot__inner">
+    <div class="foot__brand">
+      <a class="foot__mark" href="#main">
+        <img class="foot__glyph" src={`${import.meta.env.BASE_URL}brand/mark.webp`} alt="" width="1600" height="1536" decoding="async" loading="lazy" />
+        <span>{site.name}</span>
+      </a>
+    </div>
+
+    <p class="foot__colophon">{t.footer.colophon}</p>
+
+    <nav class="foot__group foot__group--index" aria-label={t.nav.footer}>
+      <h2 class="foot__label">{t.footer.index}</h2>
+      <ul class="foot__links">
+        {t.nav.items.map((item) => (
+          <li>
+            <a href={item.href}>{item.label}</a>
+          </li>
+        ))}
+      </ul>
+    </nav>
+
+    <div class="foot__group foot__group--reach">
+      <h2 class="foot__label">{t.footer.reach}</h2>
+      <a class="foot__mail" href={`mailto:${site.email}`}>{site.email}</a>
+
+      <nav class="foot__lang" aria-label={t.nav.language}>
+        {locales.map((code) => (
+          <a
+            href={pathFor(code, here)}
+            hreflang={languages[code].htmlLang}
+            lang={languages[code].htmlLang}
+            aria-current={code === lang ? 'true' : undefined}
+          >
+            {languages[code].label}
+          </a>
+        ))}
+      </nav>
+    </div>
+  </div>
+
+  <div class="shell foot__meta">
+    <div class="foot__end">
+      <a class="foot__top" href="#main">
+        <svg viewBox="0 0 16 16" fill="none" aria-hidden="true">
+          <path d="M8 13V3m0 0L3.5 7.5M8 3l4.5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" />
+        </svg>
+        {t.footer.backToTop}
+      </a>
+      <span class="foot__year">&copy; {year} {site.name}</span>
+    </div>
+  </div>
+
+</footer>
+
+<style>
+  .foot {
+    position: relative;
+    isolation: isolate;
+    overflow: hidden;
+    background: var(--void);
+    padding-block: clamp(4.5rem, 7vw, 6.5rem) clamp(3rem, 5vw, 4.5rem);
+  }
+
+  /* No mask, no scrim, no fade — and that is the whole point of this asset.
+     The source is pure black everywhere except the glowing chevron, and
+     mix-blend-mode: screen is 1-(1-a)(1-b), so any black source pixel returns
+     the backdrop untouched. The black does not darken the page, it vanishes,
+     and only the light is added. There is no edge anywhere to produce a seam,
+     including down the sides, which is what the previous orbit band needed a
+     25-stop gradient to fake.
+
+     Screen can only ever lighten, so it cannot damage the page colour — but it
+     CAN lighten what sits behind text, which is why the placement below keeps
+     the bright apex clear of the columns and why the contrast is measured. */
+  .foot__chevron {
+    position: absolute;
+    z-index: -1;
+    inset-block-end: -14%;
+    inset-inline-end: -6%;
+    inline-size: min(62%, 46rem);
+    block-size: auto;
+    mix-blend-mode: screen;
+    opacity: 0.85;
+    pointer-events: none;
+  }
+
+  @media (max-width: 52rem) {
+    .foot__chevron {
+      inline-size: 130%;
+      inset-inline-end: -30%;
+      inset-block-end: -18%;
+      opacity: 0.6;
+    }
+  }
+
+  .foot__inner {
+    display: grid;
+    gap: clamp(2.5rem, 5vw, 4rem);
+    align-items: start;
+  }
+
+  @media (min-width: 52rem) {
+    .foot__inner {
+      grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr) minmax(0, 1fr);
+      gap: clamp(2.5rem, 5vw, 4rem) clamp(2rem, 5vw, 5rem);
+    }
+
+    /* The wordmark takes the whole row rather than the first column. At studio
+       scale it measures ~480px wide, which overflowed a 402px column and ran
+       straight through the section links. Sites that set a wordmark this large
+       give it its own row for exactly this reason. */
+    .foot__brand {
+      grid-column: 1 / -1;
+    }
+
+    .foot__colophon {
+      grid-column: 1;
+      grid-row: 2;
+    }
+
+    /* Explicit classes, not :first-of-type / :last-of-type. Those match per
+       ELEMENT TYPE: the index group is a <nav> and the reach group is a <div>,
+       so the lone <nav> was both the first and the last of its type and the
+       later rule dropped both groups into column 3, stacked on each other. */
+    .foot__group--index {
+      grid-column: 2;
+      grid-row: 2;
+    }
+
+    .foot__group--reach {
+      grid-column: 3;
+      grid-row: 2;
+    }
+  }
+
+  /* Big, but the brand sign-off rather than a second sales pitch. It scales
+     with the viewport as live text, so it costs nothing on a phone where a
+     fixed-size wordmark would become several thumb-scrolls of nothing. */
+  .foot__mark {
+    display: inline-flex;
+    align-items: baseline;
+    gap: 0.35em;
+    color: var(--ink);
+    /* The oversized wordmark is a studio/agency idiom, not a product-site one:
+       measured product footers top out at 13-24px type, while Basement runs 76px
+       and DEPT 92px. lambdasoft is a studio, so this belongs — at studio scale.
+       The tracking matters as much as the size: optical tightening of roughly
+       -0.02em to -0.045em at display sizes is the most reliable marker
+       separating a 2026 footer from a 2020 one. */
+    font-size: clamp(2rem, 1rem + 4.4vw, 5rem);
+    font-weight: 700;
+    letter-spacing: -0.038em;
+    line-height: 1;
+    text-decoration: none;
+    transition: color var(--dur-base) var(--ease-out-quart);
+  }
+
+  .foot__mark:hover {
+    color: var(--frost);
+  }
+
+  .foot__glyph {
+    inline-size: auto;
+    block-size: 0.95em;
+    align-self: center;
+  }
+
+  .foot__group {
+    display: grid;
+    gap: var(--space-sm);
+    justify-items: start;
+  }
+
+  /* A real heading, not an invented column header over a single item: each
+     group below holds more than one thing. */
+  .foot__label {
+    color: var(--ink-muted);
+    font-size: 0.75rem;
+    font-weight: 600;
+    letter-spacing: 0.09em;
+    text-transform: uppercase;
+    opacity: 0.75;
+  }
+
+  .foot__links {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: grid;
+    gap: 0.55rem;
+  }
+
+  .foot__links a {
+    color: var(--ink-muted);
+    font-size: var(--text-sm);
+    text-decoration: none;
+    transition: color var(--dur-fast) var(--ease-out-quart);
+  }
+
+  .foot__links a:hover {
+    color: var(--ink);
+  }
+
+  /* the literal address as the link text, so it can be read, copied or dictated
+     rather than hidden behind a "get in touch" label */
+  .foot__mail {
+    color: var(--ink);
+    font-size: clamp(1rem, 0.9rem + 0.4vw, 1.2rem);
+    font-weight: 600;
+    letter-spacing: -0.01em;
+    overflow-wrap: anywhere;
+    text-decoration-line: underline;
+    text-decoration-thickness: 1px;
+    text-underline-offset: 0.25em;
+    text-decoration-color: rgb(var(--ring-ch) / 0.45);
+    transition: color var(--dur-fast) var(--ease-out-quart);
+  }
+
+  .foot__mail:hover {
+    color: var(--ring);
+  }
+
+  .foot__lang {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+    margin-block-start: var(--space-xs);
+  }
+
+  .foot__lang a {
+    padding: 0.3rem 0.7rem;
+    border: 1px solid rgb(var(--frost-ch) / 0.2);
+    border-radius: var(--radius-pill);
+    color: var(--ink-muted);
+    font-size: 0.78rem;
+    font-weight: 600;
+    text-decoration: none;
+    transition:
+      color var(--dur-fast) var(--ease-out-quart),
+      border-color var(--dur-fast) var(--ease-out-quart);
+  }
+
+  .foot__lang a:hover {
+    color: var(--ink);
+    border-color: rgb(var(--ring-ch) / 0.45);
+  }
+
+  .foot__lang a[aria-current] {
+    color: var(--ink);
+    background: rgb(var(--ring-ch) / 0.18);
+    border-color: rgb(var(--ring-ch) / 0.45);
+  }
+
+  /* Left, not right. The chevron's apex is the brightest part of the asset and
+     it lands bottom-right; with the meta row right-aligned, "Back to top"
+     measured 1.65:1 and the copyright 1.19:1 against it. Moving the type to the
+     empty side is better than shrinking or dimming the artwork to accommodate
+     it. */
+  .foot__meta {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: flex-start;
+    gap: var(--space-md) var(--space-xl);
+    gap: var(--space-md) var(--space-lg);
+    margin-block-start: clamp(2.5rem, 5vw, 4rem);
+    padding-block-start: var(--space-lg);
+    border-block-start: 1px solid rgb(var(--glacier-ch) / 0.14);
+  }
+
+  /* sits in column 1 beneath the wordmark, which is otherwise an empty quarter
+     of the row once the wordmark takes its own line */
+  .foot__colophon {
+    max-width: 40ch;
+    color: var(--ink-muted);
+    font-size: var(--text-sm);
+    line-height: 1.6;
+    opacity: 0.9;
+  }
+
+  .foot__end {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--space-lg);
+    font-size: var(--text-sm);
+  }
+
+  /* static, in the footer. A floating back-to-top that follows the reader down
+     the page is a permanent tax for an occasional need. */
+  .foot__top {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+    color: var(--ink-muted);
+    text-decoration: none;
+    transition: color var(--dur-fast) var(--ease-out-quart);
+  }
+
+  .foot__top svg {
+    inline-size: 0.95rem;
+    block-size: 0.95rem;
+  }
+
+  .foot__top:hover {
+    color: var(--ink);
+  }
+
+  .foot__year {
+    color: var(--ink-muted);
+    opacity: 0.8;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .foot__mark,
+    .foot__links a,
+    .foot__lang a,
+    .foot__mail,
+    .foot__top {
+      transition: none;
+    }
+  }
+</style>

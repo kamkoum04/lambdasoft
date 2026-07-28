@@ -1,0 +1,26 @@
+# lambdasoft
+
+> A product engineering team for the AI era. We design, build and ship
+> software: web, mobile and desktop applications, the cloud infrastructure
+> they run on, and the agentic and generative AI inside them.
+
+lambdasoft is a new studio. We take a single discipline or the whole build,
+from first sketch to production. There is no client roster to quote yet, and
+we would rather say that than invent one.
+
+## What we do
+
+- **Software engineering**: web, mobile and desktop applications. TypeScript from the database to the browser, native where the platform genuinely matters.
+- **Cloud and infrastructure**: containers, CI that runs the tests before a merge, and infrastructure as code so any environment rebuilds from the repository alone.
+- **Agentic and generative AI**: autonomous agents that plan and call your tools, retrieval over your own documents, and the evaluations that show it helped.
+- **Security**: authentication and authorisation done properly, secrets kept out of the repository, dependencies monitored, least-privilege access by default.
+
+## Why teams work with us
+
+Designed for scale, natively global, direct access to the engineers doing the
+work, an ecosystem you can extend, built for the AI era, and design judgement
+applied as seriously as engineering.
+
+## Contact
+
+Email: hello@lambdasoft.com (placeholder: not yet a live inbox)

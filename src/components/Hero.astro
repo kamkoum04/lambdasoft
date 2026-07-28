@@ -1,0 +1,193 @@
+---
+import { Image } from 'astro:assets';
+import night from '../assets/night-water.jpg';
+import { site } from '../site';
+import StackGrid from './StackGrid.astro';
+import { useTranslations } from '../i18n/utils';
+
+const t = useTranslations(Astro.currentLocale);
+---
+
+<section class="hero">
+  <Image
+    class="hero__media"
+    src={night}
+    alt={t.hero.imageAlt}
+    widths={[768, 1280, 1920]}
+    sizes="100vw"
+    loading="eager"
+    fetchpriority="high"
+    quality={84}
+  />
+
+  <div class="hero__scrim" aria-hidden="true"></div>
+
+  <div class="hero__stage">
+    <div class="hero__content shell">
+      <h1 class="hero__title rise">{t.hero.title}</h1>
+
+      <p class="hero__lede rise" data-anim-delay="90">{t.hero.lede}
+      </p>
+
+      <div class="hero__actions rise" data-anim-delay="180">
+        <a class="cta" href={`mailto:${site.email}`}>
+          {t.hero.cta}
+          <svg class="cta__arrow" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+            <path
+              d="M3 8h10m0 0-4-4m4 4-4 4"
+              stroke="currentColor"
+              stroke-width="1.6"
+              stroke-linecap="round"
+              stroke-linejoin="round"></path>
+          </svg>
+        </a>
+      </div>
+
+      <StackGrid />
+    </div>
+  </div>
+
+  <div class="hero__fade" aria-hidden="true"></div>
+  <div class="hero__end" data-hero-end aria-hidden="true"></div>
+</section>
+
+<style>
+  .hero {
+    position: relative;
+    min-height: 100svh;
+    display: grid;
+    grid-template-rows: 1fr;
+    isolation: isolate;
+  }
+
+  .hero__media {
+    position: absolute;
+    inset: 0;
+    z-index: var(--z-media);
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    /* keep the glowing pool in frame as the viewport gets taller */
+    object-position: 50% 62%;
+  }
+
+  /* The block is biased upward by the trailing padding. Its position is not a
+     preference, it is arithmetic: the photograph's horizon ignites at 55% of the
+     frame, and plain text over that band measures 2.75:1.
+
+     Critically, this padding also keeps the hero at exactly one viewport. The
+     image is object-fit:cover on this container, so if the content ever grows
+     past 100svh the container grows with it and the photograph RE-CROPS: more
+     sky, and the glowing pool pushed out of frame. If you add anything to the
+     hero, reduce this value by the same amount so the total still fits. */
+  .hero__stage {
+    position: relative;
+    z-index: var(--z-content);
+    display: grid;
+    align-items: center;
+    padding-block-start: var(--bar-height);
+    padding-block-end: calc(11svh + var(--bar-height));
+  }
+
+  /* Centring puts the headline over the horizon glow, where white text falls
+     to 4.6:1 and below. This grade darkens the sky and the upper horizon while
+     leaving the glowing pool untouched. Tuned by measurement rather than by
+     eye: it is the lightest grade that keeps the lowest headline line clear of
+     the large-text threshold, so the photograph keeps as much life as possible. */
+  .hero__scrim {
+    position: absolute;
+    inset: 0;
+    z-index: var(--z-media);
+    pointer-events: none;
+    background: linear-gradient(
+      180deg,
+      rgb(var(--void-ch) / 0.44) 0%,
+      rgb(var(--void-ch) / 0.4) 38%,
+      rgb(var(--void-ch) / 0.32) 55%,
+      rgb(var(--void-ch) / 0.12) 66%,
+      rgb(var(--void-ch) / 0) 74%
+    );
+  }
+
+  .hero__content {
+    display: grid;
+    justify-items: center;
+    gap: var(--space-xl);
+    text-align: center;
+  }
+
+  .hero__title {
+    font-size: var(--text-display);
+    max-width: 22ch;
+  }
+
+  .hero__lede {
+    max-width: 52ch;
+    font-size: var(--text-lead);
+    line-height: 1.6;
+    color: var(--ink-muted);
+  }
+
+  .hero__actions {
+    margin-block-start: var(--space-xs);
+  }
+
+  /* positioned directly under the action, nothing else about the hero changed */
+  .hero__content > :global(.stack) {
+    margin-block-start: var(--space-lg);
+  }
+
+  /* The photograph dissolves into the page rather than ending at a line. Its
+     bottom edge measures #05132D against a #02081C page, and its final row is
+     lighter still, so a hard cut would show as a pale hairline across the full
+     width. This fade removes the boundary entirely. */
+  .hero__fade {
+    position: absolute;
+    inset-inline: 0;
+    inset-block-end: 0;
+    block-size: 22%;
+    z-index: var(--z-media);
+    pointer-events: none;
+    background: linear-gradient(180deg, rgb(var(--void-ch) / 0) 0%, rgb(var(--void-ch) / 0.65) 62%, var(--void) 100%);
+  }
+
+  /* Sentinel for the top bar. It sits just below the bar rather than at the
+     foot of the hero: the photograph's bright pool scrolls under the bar around
+     y=520-640, where transparent nav links measured 1.00:1. The bar therefore
+     has to become a surface as soon as the page moves at all. Only at rest, on
+     the darkest part of the sky, is it allowed to be invisible. */
+  .hero__end {
+    position: absolute;
+    /* Reads the token. It was hardcoded 4rem while --bar-height is 4.5rem, so
+       it sat 8px ABOVE the bar's lower edge — the opposite of what the comment
+       above claims — and drifted silently whenever the token changed. */
+    inset-block-start: var(--bar-height);
+    block-size: 1px;
+    inline-size: 100%;
+  }
+
+  /* Short viewports: the safe band is a fixed share of the frame, so the type
+     steps down rather than the band growing into the glow. */
+  @media (max-height: 800px) and (min-width: 48rem) {
+    .hero__title {
+      font-size: clamp(2.1rem, 1.2rem + 2.6vw, 3.5rem);
+    }
+
+    .hero__lede {
+      font-size: var(--text-body);
+    }
+  }
+
+  @media (max-width: 48rem) {
+    .hero__title {
+      max-width: 17ch;
+      /* balance equalises line lengths, which on a narrow screen orphans a
+         single word onto its own line. Greedy wrapping reads better here. */
+      text-wrap: wrap;
+    }
+
+    .hero__lede {
+      max-width: 40ch;
+    }
+  }
+</style>
