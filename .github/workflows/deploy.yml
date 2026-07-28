@@ -28,6 +28,11 @@ jobs:
           node-version: 24        # 22+ needed: the i18n check imports .ts directly
           cache: npm
       - run: npm ci
+      # Build first. Four of the assertions read dist/ — anchor integrity,
+      # the no-third-party-scripts claim the footer makes to visitors, the
+      # JSON-LD placeholder gate, and the hreflang pair. dist/ is gitignored,
+      # so without this step they fail on a checkout with nothing to inspect.
+      - run: npm run build
       # The assertions that used to live in comments: contrast ratios computed
       # from the design tokens, locale key parity, French spacing, anchor
       # integrity, and that no third-party script ships (the footer says so).
