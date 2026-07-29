@@ -9,13 +9,13 @@ const here = Astro.url.pathname;
 
 <header class="bar" data-bar>
   <div class="bar__inner shell">
-    <a class="mark" href="#main" aria-label={`${site.name}, ${t.nav.backToTop}`}>
+    <a class="mark tap--wide tap" href="#main" aria-label={`${site.name}, ${t.nav.backToTop}`}>
       <img class="mark__glyph" src={`${import.meta.env.BASE_URL}brand/mark.webp`} alt="" width="1600" height="1536" decoding="sync" fetchpriority="high" />
       <span class="mark__word">{site.name}</span>
     </a>
 
     <nav class="bar__nav" aria-label={t.nav.sections}>
-      {t.nav.items.map((item) => <a href={item.href}>{item.label}</a>)}
+      {t.nav.items.map((item) => <a class="tap" href={item.href}>{item.label}</a>)}
     </nav>
 
     <div class="bar__end">
@@ -31,7 +31,7 @@ const here = Astro.url.pathname;
 
         {locales.map((code) => (
           <a
-            class="lang__link"
+            class="lang__link tap"
             href={pathFor(code, here)}
             hreflang={languages[code].htmlLang}
             lang={languages[code].htmlLang}
@@ -152,6 +152,10 @@ const here = Astro.url.pathname;
 
   .mark {
     justify-self: start;
+    /* Never let flex squeeze the brand away. Under pressure at 280px (the
+       Galaxy Fold cover screen) this collapsed to zero width and the logo
+       simply vanished from the bar. */
+    flex: none;
     display: inline-flex;
     align-items: baseline;
     gap: 0.6rem;
@@ -251,6 +255,30 @@ const here = Astro.url.pathname;
       align-items: center;
       justify-content: space-between;
       gap: var(--space-md);
+    }
+  }
+
+  /* Below 20rem the bar cannot hold the mark, the language pair and the action
+     at once — measured 320px of content in a 280px viewport on the Galaxy Fold
+     cover screen. The switcher gives way because it is the only one of the
+     three that is duplicated in the footer.
+
+     19.5rem, not 20rem: at exactly 320px (iPhone SE, and the commonest small
+     phone there is) all three DO fit — the action ends at 300 of 320. A 20rem
+     bound would have dropped the switcher on a device that never needed it. */
+  @media (max-width: 19.5rem) {
+    .lang {
+      display: none;
+    }
+  }
+
+  /* French needs the room sooner: "Nous ecrire" is wider than "Email us", so at
+     320px the bar overflowed in French while fitting in English. The threshold
+     is per-language rather than a single worst-case bound, so English keeps its
+     switcher on every phone. */
+  @media (max-width: 21.5rem) {
+    :global(html:lang(fr)) .lang {
+      display: none;
     }
   }
 

@@ -7,18 +7,35 @@
  * (#000000) and GitHub (#181717) land at 1.21:1 and 1.03:1 and simply vanish.
  * Both brands publish a white variant for dark backgrounds and their guidelines
  * require it, so those two are set in frost rather than recoloured arbitrarily.
- * AWS is absent from simple-icons entirely, Amazon having had it withdrawn over
- * trademark policy, so it appears as a wordmark. Never redraw a protected mark.
+ *
+ * AWS and Google Cloud ship as the official multi-colour artwork instead of
+ * simple-icons entries: Amazon had its mark withdrawn from simple-icons over
+ * trademark policy, and the simple-icons Google Cloud glyph is a monochrome
+ * simplification of a four-colour logo. Provenance and colourway rules live in
+ * src/assets/brands/README.md. Never redraw a protected mark; never invent a
+ * colourway for one.
  *
  * The empty tiles are deliberate. A grid with every slot filled becomes a logo
  * wall; the gaps are what give it rhythm and keep it from reading as padding.
  */
 import icons from '../stack-icons.json';
 import { useTranslations } from '../i18n/utils';
+import awsMark from '../assets/brands/aws.svg?raw';
+import gcpMark from '../assets/brands/google-cloud.svg?raw';
 
 const t = useTranslations(Astro.currentLocale);
 
-type Cell = { kind: 'icon'; label: string } | { kind: 'gap' } | { kind: 'word'; label: string } | { kind: 'own' };
+/* Official multi-colour artwork that a single-path simple-icons entry cannot
+   carry. See src/assets/brands/README.md for provenance and the AWS reversed
+   colourway. aria-hidden on the svg: the wrapper span carries the name. */
+const brands: Record<string, string> = Object.fromEntries(
+  Object.entries({ AWS: awsMark, 'Google Cloud': gcpMark }).map(([k, v]) => [
+    k,
+    v.replace('<svg ', '<svg aria-hidden="true" '),
+  ]),
+);
+
+type Cell = { kind: 'icon'; label: string } | { kind: 'gap' } | { kind: 'brand'; label: string } | { kind: 'own' };
 
 const byLabel = Object.fromEntries(icons.map((i) => [i.label, i]));
 
@@ -26,7 +43,7 @@ const rows: Cell[][] = [
   [
     { kind: 'gap' },
     { kind: 'icon', label: 'React' },
-    { kind: 'word', label: 'AWS' },
+    { kind: 'brand', label: 'AWS' },
     { kind: 'icon', label: 'Docker' },
     { kind: 'icon', label: 'Kubernetes' },
     { kind: 'gap' },
@@ -34,7 +51,7 @@ const rows: Cell[][] = [
     { kind: 'icon', label: 'PostgreSQL' },
   ],
   [
-    { kind: 'icon', label: 'Google Cloud' },
+    { kind: 'brand', label: 'Google Cloud' },
     { kind: 'gap' },
     { kind: 'icon', label: 'Next.js' },
     { kind: 'own' },
@@ -58,7 +75,10 @@ const rows: Cell[][] = [
 ---
 
 <div class="stack">
-  <div class="shell">
+  <!-- No .shell here. This component only ever renders inside the hero's own
+       .shell, so a second one applied the gutter twice and cost ~77px of width
+       at 769px — enough to wrap the offset row onto two lines. -->
+  <div>
     <div class="grid rise" data-anim-delay="240" role="list" aria-label={t.hero.stackLabel}>
       {
         rows.map((row, r) => (
@@ -71,9 +91,15 @@ const rows: Cell[][] = [
                   <img class="tile__glyph" src={`${import.meta.env.BASE_URL}brand/mark.webp`} alt="" width="1600" height="1536" decoding="async" />
                   <span class="tile__sr">lambdasoft</span>
                 </span>
-              ) : cell.kind === 'word' ? (
+              ) : cell.kind === 'brand' ? (
                 <span class="tile" role="listitem" data-name={cell.label}>
-                  <span class="tile__word">{cell.label}</span>
+                  <span
+                    class="tile__brand"
+                    data-brand={cell.label}
+                    role="img"
+                    aria-label={cell.label}
+                    set:html={brands[cell.label]}
+                  />
                 </span>
               ) : (
                 <span class="tile" role="listitem" data-name={cell.label}>
@@ -98,8 +124,21 @@ const rows: Cell[][] = [
 
   .grid {
     /* declared here, not on .tile: the offset row needs to read it too, and a
-       custom property set on a child is invisible to its parent */
-    --tile: clamp(3.1rem, 5.6vw, 4.25rem);
+       custom property set on a child is invisible to its parent.
+
+       Fixed, not clamped to the viewport. The old clamp(3.1rem, 5.6vw, 4.25rem)
+       sat on its 3.1rem floor until ~886px, so crossing the 48rem switch made
+       the tiles shrink 68px -> 50px: the grid got SMALLER as the viewport got
+       BIGGER. The mobile rule caps at this same 4.25rem, so the two sides now
+       meet at the seam and only the arrangement changes.
+
+       Checked at the tightest desktop width, 769px: the offset row needs
+       margin(68+8) + 8 tiles + 7 gaps = 673px inside 692px of content. It fits.
+       Do not raise this without redoing that arithmetic. A percentage-based
+       calc() does NOT work here — a percentage inside a custom property is
+       resolved at the use site, against .tile's flex parent, which collapsed
+       the tiles to 29px. */
+    --tile: 4.25rem;
     --tile-gap: clamp(0.5rem, 1vw, 0.75rem);
     display: grid;
     gap: var(--tile-gap);
@@ -197,11 +236,24 @@ const rows: Cell[][] = [
     block-size: 48%;
   }
 
-  .tile__word {
-    font-size: clamp(0.7rem, 1.1vw, 0.85rem);
-    font-weight: 800;
-    letter-spacing: -0.02em;
-    color: #ff9d2f; /* AWS orange, lifted for legibility on the dark tile */
+  .tile__brand {
+    display: grid;
+    place-items: center;
+    inline-size: 100%;
+    block-size: 100%;
+  }
+
+  /* set:html content carries no scope attribute, so the svg needs :global.
+     Widths are per mark because their aspect ratios differ: AWS is a wide
+     lockup (256x153), the cloud is squarer (256x206). */
+  .tile__brand :global(svg) {
+    inline-size: 58%;
+    block-size: auto;
+    display: block;
+  }
+
+  .tile__brand[data-brand='AWS'] :global(svg) {
+    inline-size: 64%;
   }
 
   /* lambdasoft sits among the tools, lit but deliberately not the loudest thing
@@ -218,15 +270,64 @@ const rows: Cell[][] = [
     block-size: auto;
   }
 
-  /* on narrow screens the stagger and the spacers both stop helping: the rows
-     reflow, so an offset row just looks misaligned */
+  /* On narrow screens the stagger and the spacers both stop helping: the rows
+     reflow, so an offset row just looks misaligned.
+
+     The tiles also stop being a fixed size and become a fraction of the row.
+     They used to sit on the 3.1rem floor of their clamp, so six tiles plus five
+     gaps needed 340px while a 360px phone offers 320px of content — the sixth
+     tile wrapped to a line of its own. Measured: 5+1 at 360-412px and 4+2 at
+     320px, resolving only at 430px. Emulated 390px viewports on a desktop hid
+     it because the desktop scrollbar-free width differed.
+
+     nowrap is what guarantees the fix: the row can no longer break, so a tile
+     can never be orphaned. Row three carries five tiles and centres them
+     against the same six-column measure, which reads as intentional. */
   @media (max-width: 48rem) {
+    .grid {
+      --tile-gap: clamp(0.3rem, 1.6vw, 0.6rem);
+    }
+
     .grid__row--offset {
       margin-inline-start: 0;
     }
 
     .tile--gap {
       display: none;
+    }
+
+    .grid__row {
+      inline-size: 100%;
+      flex-wrap: nowrap;
+      justify-content: center;
+    }
+
+    .tile {
+      /* the 0.5px is sub-pixel slack: at 320px the six tiles plus five gaps
+         land on exactly 280.0px of content and rounding tipped it 1px over */
+      inline-size: calc((100% - 5 * var(--tile-gap)) / 6 - 0.5px);
+      block-size: auto;
+      aspect-ratio: 1;
+      max-inline-size: 4.25rem;
+    }
+
+    /* the marks are the whole point of the grid; hold them legible as the
+       tile shrinks toward 40px */
+    .tile__icon {
+      inline-size: 56%;
+      block-size: 56%;
+    }
+
+    .tile__brand :global(svg) {
+      inline-size: 68%;
+    }
+
+    .tile__brand[data-brand='AWS'] :global(svg) {
+      inline-size: 76%;
+    }
+
+    .tile__glyph {
+      inline-size: 60%;
     }
   }
 

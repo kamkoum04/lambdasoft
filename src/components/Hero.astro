@@ -168,7 +168,10 @@ const t = useTranslations(Astro.currentLocale);
 
   /* Short viewports: the safe band is a fixed share of the frame, so the type
      steps down rather than the band growing into the glow. */
-  @media (max-height: 800px) and (min-width: 48rem) {
+  /* No min-width gate. This was `and (min-width: 48rem)`, which excluded every
+     landscape phone — a 744x360 viewport is short *and* narrow, exactly the case
+     that needs the step-down most, and it was the only one not getting it. */
+  @media (max-height: 800px) {
     .hero__title {
       font-size: clamp(2.1rem, 1.2rem + 2.6vw, 3.5rem);
     }

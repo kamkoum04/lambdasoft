@@ -10,6 +10,10 @@ import { spawn, execSync } from 'node:child_process';
 import { writeFileSync, mkdirSync } from 'node:fs';
 
 const PORT = 4455;
+// Must track astro.config.mjs. This check was written before the site gained a
+// deploy base and silently 404'd from then on — it requested /.wf/ and / while
+// everything moved under /lambdasoft/.
+const BASE = (process.env.BASE_PATH ?? '/lambdasoft').replace(/\/+$/, '');
 const CH = 'google-chrome';
 const FLAGS = '--headless=new --disable-gpu --hide-scrollbars --force-prefers-reduced-motion --virtual-time-budget=45000';
 
@@ -19,6 +23,9 @@ writeFileSync('dist/.wf/measure.html', `<!doctype html><meta charset=utf-8><titl
 const q=new URLSearchParams(location.search), f=document.getElementById('f');
 f.style.width=q.get('w')+'px'; f.style.height=q.get('h')+'px'; f.src=q.get('u');
 f.onload=()=>{const d=f.contentDocument,w=f.contentWindow;
+ // the brand intro would otherwise cover the page while we measure it
+ d.documentElement.removeAttribute('data-intro');
+ const intro=d.getElementById('intro'); if(intro) intro.remove();
  [...d.images].forEach(i=>{i.loading='eager';i.decoding='sync';i.src=i.src;});
  setTimeout(()=>{const hero=d.querySelector('.hero');
   document.title=JSON.stringify({hero:Math.round(hero.getBoundingClientRect().height),
@@ -31,10 +38,10 @@ await new Promise((r) => setTimeout(r, 9000));
 
 let failed = 0;
 try {
-  for (const locale of ['/', '/fr/']) {
+  for (const locale of [`${BASE}/`, `${BASE}/fr/`]) {
     for (const [w, h] of [[1440, 900], [1440, 700], [390, 780]]) {
       const dom = execSync(
-        `${CH} ${FLAGS} --window-size=1700,1100 --dump-dom "http://localhost:${PORT}/.wf/measure.html?u=${locale}&w=${w}&h=${h}" 2>/dev/null`,
+        `${CH} ${FLAGS} --window-size=1700,1100 --dump-dom "http://localhost:${PORT}${BASE}/.wf/measure.html?u=${locale}&w=${w}&h=${h}" 2>/dev/null`,
         { encoding: 'utf8', maxBuffer: 64e6 },
       );
       const m = JSON.parse(dom.match(/<title>([^<]*)/)[1]);

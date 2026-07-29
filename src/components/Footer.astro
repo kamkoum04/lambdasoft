@@ -47,7 +47,7 @@ const year = new Date().getFullYear();
 
   <div class="shell foot__inner">
     <div class="foot__brand">
-      <a class="foot__mark" href="#main">
+      <a class="foot__mark tap--wide tap" href="#main">
         <img class="foot__glyph" src={`${import.meta.env.BASE_URL}brand/mark.webp`} alt="" width="1600" height="1536" decoding="async" loading="lazy" />
         <span>{site.name}</span>
       </a>
@@ -60,7 +60,7 @@ const year = new Date().getFullYear();
       <ul class="foot__links">
         {t.nav.items.map((item) => (
           <li>
-            <a href={item.href}>{item.label}</a>
+            <a class="tap" href={item.href}>{item.label}</a>
           </li>
         ))}
       </ul>
@@ -68,12 +68,13 @@ const year = new Date().getFullYear();
 
     <div class="foot__group foot__group--reach">
       <h2 class="foot__label">{t.footer.reach}</h2>
-      <a class="foot__mail" href={`mailto:${site.email}`}>{site.email}</a>
+      <a class="foot__mail tap" href={`mailto:${site.email}`}>{site.email}</a>
 
       <nav class="foot__lang" aria-label={t.nav.language}>
         {locales.map((code) => (
           <a
             href={pathFor(code, here)}
+            class="tap"
             hreflang={languages[code].htmlLang}
             lang={languages[code].htmlLang}
             aria-current={code === lang ? 'true' : undefined}
@@ -87,7 +88,7 @@ const year = new Date().getFullYear();
 
   <div class="shell foot__meta">
     <div class="foot__end">
-      <a class="foot__top" href="#main">
+      <a class="foot__top tap" href="#main">
         <svg viewBox="0 0 16 16" fill="none" aria-hidden="true">
           <path d="M8 13V3m0 0L3.5 7.5M8 3l4.5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" />
         </svg>

@@ -1,0 +1,293 @@
+---
+/**
+ * The brand intro. A curtain in --void, the mark, the wordmark staggering in,
+ * then the whole lockup shrinks and travels to the top bar and BECOMES the bar
+ * logo — the brand never blinks between intro and page.
+ *
+ * Rules this obeys, decided by grilling:
+ * - Plays once per browsing session (sessionStorage). Reloads, back-navigation
+ *   and the EN/FR switch go straight to the page. PRODUCT.md promises a page
+ *   that respects the visitor's time; the toll is paid once.
+ * - prefers-reduced-motion skips it entirely — the <head> arming script never
+ *   sets data-intro, so the overlay never displays. No JS → same.
+ * - Load-aware with a cap: the choreography runs ~1.6s; if the hero photograph
+ *   has not decoded by then the curtain holds while it does, but never past
+ *   2.5s total. The curtain masks the one ugly moment a photo-hero page has.
+ * - A 4s absolute failsafe force-completes everything. A stuck curtain is a
+ *   broken site; nothing here is allowed to depend on every step going right.
+ *
+ * The handoff is FLIP: measure the bar logo's box, transform the intro lockup
+ * onto it, then swap opacity at identical geometry. On narrow viewports the bar
+ * hides its wordmark, so the intro's word fades during the travel and only the
+ * mark lands.
+ */
+import { site } from '../site';
+
+const letters = [...site.name];
+---
+
+<div class="intro" id="intro" aria-hidden="true">
+  <div class="intro__curtain"></div>
+  <span class="intro__lockup">
+    <img
+      class="intro__glyph"
+      src={`${import.meta.env.BASE_URL}brand/mark.webp`}
+      alt=""
+      width="1600"
+      height="1536"
+      decoding="sync"
+      fetchpriority="high"
+    />
+    <span class="intro__word">
+      {letters.map((c, i) => (
+        <span class="intro__letter" style={`--d: ${0.45 + i * 0.05}s`}>{c}</span>
+      ))}
+    </span>
+  </span>
+</div>
+
+<style is:global>
+  /* The page under the curtain: no scrolling mid-ceremony, and the bar's own
+     logo stays hidden until the travelling lockup has landed on it — otherwise
+     two copies of the brand are visible during the exit. data-intro="done" is
+     the crossfade beat: overlay still displayed, bar logo fading in. */
+  html[data-intro] {
+    overflow: hidden;
+  }
+
+  /* No transition here, deliberately. The handoff is a same-frame hard swap:
+     the travelling lockup is hidden and this rule flips in one style pass, at
+     identical geometry. The earlier 150ms cross-fade composited two 50%-opacity
+     copies to ~75% at the midpoint — the logo visibly blinked at landing. */
+  html[data-intro] .bar .mark {
+    opacity: 0;
+  }
+
+  html[data-intro='done'] .bar .mark {
+    opacity: 1;
+  }
+</style>
+
+<style>
+  .intro {
+    position: fixed;
+    inset: 0;
+    z-index: var(--z-intro);
+    display: none;
+    place-items: center;
+  }
+
+  :global(html[data-intro]) .intro {
+    display: grid;
+  }
+
+  .intro__curtain {
+    position: absolute;
+    inset: 0;
+    background: var(--void);
+  }
+
+  /* Proportions mirror the bar lockup (glyph 1.6em, gap 0.48em, weight 700),
+     so the FLIP scale maps one onto the other without distortion. The final
+     150ms opacity swap at identical geometry absorbs sub-pixel mismatch. */
+  .intro__lockup {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.48em;
+    font-size: clamp(2.25rem, 1.5rem + 4vw, 4rem);
+    font-weight: 700;
+    letter-spacing: -0.015em;
+    color: var(--ink);
+    will-change: transform;
+    transition:
+      transform 0.6s var(--ease-out-quint),
+      opacity 0.15s linear;
+  }
+
+  /* Idle until .intro--play: the script adds it only once the tab is visible,
+     a frame has painted, and the mark + font are ready. Without the gate the
+     animation clock starts at first style, so a background-tab load or a slow
+     font meant arriving mid-show and catching only the travel. */
+  .intro__glyph {
+    block-size: 1.6em;
+    inline-size: auto;
+    opacity: 0;
+  }
+
+  .intro--play .intro__glyph {
+    animation: intro-mark 0.6s var(--ease-out-quint) 0.12s forwards;
+  }
+
+  .intro__word {
+    display: inline-flex;
+    transition: opacity 0.35s var(--ease-out-quart);
+  }
+
+  /* inline-block letters forfeit kerning; at 700 weight with this tracking the
+     wordmark has no kerning pair where it shows */
+  .intro__letter {
+    display: inline-block;
+    opacity: 0;
+    transform: translateY(0.4em);
+  }
+
+  .intro--play .intro__letter {
+    animation: intro-letter 0.55s var(--ease-out-quint) var(--d) forwards;
+  }
+
+  .intro--hideword .intro__word {
+    opacity: 0;
+  }
+
+  .intro--fade .intro__lockup {
+    opacity: 0;
+  }
+
+  @keyframes intro-mark {
+    from {
+      opacity: 0;
+      transform: scale(0.85);
+    }
+    to {
+      opacity: 1;
+      transform: none;
+    }
+  }
+
+  @keyframes intro-letter {
+    to {
+      opacity: 1;
+      transform: none;
+    }
+  }
+
+  /* belt and braces on top of the arming script never setting data-intro */
+  @media (prefers-reduced-motion: reduce) {
+    .intro {
+      display: none !important;
+    }
+  }
+</style>
+
+<script>
+  const html = document.documentElement;
+  const root = document.getElementById('intro');
+
+  if (root && !html.hasAttribute('data-intro')) {
+    // repeat visit, reduced motion, or no-JS-at-arm-time: never shown
+    root.remove();
+  } else if (root) {
+    let finished = false;
+    let failsafe = 0;
+    const finish = () => {
+      if (finished) return;
+      finished = true;
+      root.remove();
+      html.removeAttribute('data-intro');
+      window.dispatchEvent(new Event('lambda:intro-done'));
+    };
+
+    const lockup = root.querySelector<HTMLElement>('.intro__lockup')!;
+    const glyph = root.querySelector<HTMLImageElement>('.intro__glyph')!;
+
+    const exit = () => {
+      const target = document.querySelector('.bar .mark');
+      const targetGlyph = target?.querySelector('.mark__glyph');
+      if (!target || !targetGlyph) {
+        // a page without the bar: nothing to land on, fade instead
+        root.classList.add('intro--fade');
+        window.setTimeout(() => {
+          window.clearTimeout(failsafe);
+          finish();
+        }, 200);
+        return;
+      }
+
+      const word = target.querySelector('.mark__word');
+      const wordVisible = !!word && word.getBoundingClientRect().width > 8;
+      if (!wordVisible) root.classList.add('intro--hideword');
+
+      const g1 = glyph.getBoundingClientRect();
+      const g2 = targetGlyph.getBoundingClientRect();
+      const l1 = lockup.getBoundingClientRect();
+
+      // FLIP: scale about the glyph's centre, translate that centre onto the
+      // bar glyph's centre. The word follows because the proportions match.
+      lockup.style.transformOrigin = `${g1.left - l1.left + g1.width / 2}px ${g1.top - l1.top + g1.height / 2}px`;
+      lockup.style.transform =
+        `translate(${g2.left + g2.width / 2 - (g1.left + g1.width / 2)}px, ` +
+        `${g2.top + g2.height / 2 - (g1.top + g1.height / 2)}px) ` +
+        `scale(${g2.height / g1.height})`;
+      root.classList.add('intro--exit');
+
+      // Landing: a same-frame swap, not a cross-fade. The lockup is hidden and
+      // the bar logo revealed in ONE style pass at identical geometry, so there
+      // is no frame in which the brand is dimmed or absent.
+      window.setTimeout(() => {
+        html.setAttribute('data-intro', 'done');
+        root.style.visibility = 'hidden';
+        window.setTimeout(() => {
+          window.clearTimeout(failsafe);
+          finish();
+        }, 80);
+      }, 620);
+    };
+
+    const play = () => {
+      // the session is spent when the show is actually SEEN, not merely loaded
+      try {
+        sessionStorage.setItem('lambdasoft:intro', '1');
+      } catch {
+        /* storage denied: the intro simply plays again next time */
+      }
+
+      // Absolute failsafe from the moment the show starts: whatever else
+      // happens, the page is usable 4.2s later.
+      failsafe = window.setTimeout(finish, 4200);
+      root.classList.add('intro--play');
+
+      // Choreography needs ~1.75s to read. The curtain then holds only if the
+      // hero photograph is still decoding, and never past 2.5s total.
+      const MIN = 1750;
+      const CAP = 2500;
+      const hero = document.querySelector<HTMLImageElement>('img.hero__media');
+      const heroReady =
+        hero && !hero.complete
+          ? Promise.race([
+              hero.decode().catch(() => {}),
+              new Promise((r) => window.setTimeout(r, CAP - MIN)),
+            ])
+          : Promise.resolve();
+
+      window.setTimeout(() => {
+        heroReady.then(exit);
+      }, MIN);
+    };
+
+    // The show does not start until someone can see it: wait for the tab to be
+    // visible, for one real painted frame, and (capped at 900ms) for the mark
+    // image and the typeface — so the mark never fades in as an empty box and
+    // a background-tab load never burns the choreography unseen.
+    const begin = async () => {
+      if (document.visibilityState === 'hidden') {
+        await new Promise((r) =>
+          document.addEventListener('visibilitychange', r, { once: true }),
+        );
+      }
+      await new Promise((r) =>
+        requestAnimationFrame(() => requestAnimationFrame(r)),
+      );
+      await Promise.race([
+        Promise.allSettled([
+          glyph.decode().catch(() => {}),
+          document.fonts?.ready ?? Promise.resolve(),
+        ]),
+        new Promise((r) => window.setTimeout(r, 900)),
+      ]);
+      play();
+    };
+
+    begin();
+  }
+</script>

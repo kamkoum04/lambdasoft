@@ -9,6 +9,7 @@
  */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
+import { readFileSync, readdirSync } from 'node:fs';
 import { parseTokens, ratio, over, toRgb, round } from './lib/color.mjs';
 
 const T = parseTokens('src/styles/global.css');
@@ -69,11 +70,29 @@ test('the contact field border is a UI boundary and owes 3:1', () => {
   atLeast(border, panel, 3, 'field border on the form panel');
 });
 
-test('every technology mark clears 3:1 on its tile', async () => {
-  const icons = JSON.parse(await import('node:fs').then((fs) => fs.readFileSync('src/stack-icons.json', 'utf8')));
+test('every technology mark clears 3:1 on its tile', () => {
+  const icons = JSON.parse(readFileSync('src/stack-icons.json', 'utf8'));
   const tile = over('rgb(4 14 36)', 0.74, VOID);
   for (const icon of icons) {
     atLeast(icon.hex, tile, 3, `${icon.label} (${icon.hex}) on the tile`);
+  }
+});
+
+test('every fill in the official brand artwork clears 3:1 on its tile', () => {
+  // AWS and Google Cloud are full multi-colour SVGs, not single-hex entries in
+  // stack-icons.json, so the icon check above cannot see them. Every fill in
+  // each file owes the same 3:1 — this is what caught the primary AWS colourway
+  // (#252F3E letters, 1.16:1) and forced the official reversed variant.
+  const tile = over('rgb(4 14 36)', 0.74, VOID);
+  const files = readdirSync('src/assets/brands').filter((f) => f.endsWith('.svg'));
+  assert.ok(files.length >= 2, 'expected the AWS and Google Cloud artwork');
+  for (const file of files) {
+    const svg = readFileSync(`src/assets/brands/${file}`, 'utf8');
+    const fills = [...new Set([...svg.matchAll(/fill="(#[0-9a-fA-F]{3,6})"/g)].map((m) => m[1]))];
+    assert.ok(fills.length > 0, `${file} declares no fills`);
+    for (const fill of fills) {
+      atLeast(fill, tile, 3, `${file} fill ${fill} on the tile`);
+    }
   }
 });
 
