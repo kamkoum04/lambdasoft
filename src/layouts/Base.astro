@@ -78,15 +78,40 @@ const jsonLd = {
     <script is:inline>
       /* Arms the brand intro before first paint. Session-scoped and
          motion-gated here, not in the component, so a repeat visit never shows
-         a frame of curtain and reduced-motion never shows it at all. */
-      try {
-        if (
-          !matchMedia('(prefers-reduced-motion: reduce)').matches &&
-          !sessionStorage.getItem('lambdasoft:intro')
-        ) {
-          document.documentElement.setAttribute('data-intro', '');
+         a frame of curtain and reduced-motion never shows it at all.
+
+         Each check is guarded separately and FAILS OPEN. One try/catch used to
+         wrap both, so a browser that throws on sessionStorage — Safari in
+         private browsing, or any profile with site storage blocked — disabled
+         the intro entirely instead of merely forgetting whether it had played.
+         That is a plausible reason for it never appearing on a phone.
+
+         ?intro forces it, ?intro=0 suppresses it: testing a once-per-session
+         effect on a real device is otherwise a matter of closing tabs. */
+      (function () {
+        var el = document.documentElement;
+        var force = null;
+        try {
+          var p = new URLSearchParams(location.search);
+          if (p.has('intro')) force = p.get('intro') !== '0';
+        } catch (e) {}
+
+        if (force === false) return;
+
+        var reduced = false;
+        try {
+          reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
+        } catch (e) {}
+
+        var seen = false;
+        try {
+          seen = !!sessionStorage.getItem('lambdasoft:intro');
+        } catch (e) {}
+
+        if (force === true || (!reduced && !seen)) {
+          el.setAttribute('data-intro', '');
         }
-      } catch (e) {}
+      })();
     </script>
     <title>{title}</title>
     <meta name="description" content={description} />

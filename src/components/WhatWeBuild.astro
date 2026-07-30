@@ -44,7 +44,7 @@ const litFill = 'rgb(var(--ring-ch) / 0.14)';
 /* Same drawing language as the partner grid: thin strokes, one lit element.
    A desktop and a phone running one interface, which is the claim the card
    makes in words. */
-const devices = `<svg viewBox="0 0 260 132" fill="none" role="img" aria-label="{ALT}">
+const devices = `<svg viewBox="0 0 260 132" width="260" height="132" fill="none" role="img" aria-label="{ALT}">
   <rect x="6" y="8" width="176" height="104" rx="7" fill="${glass}" stroke="${line}"/>
   <path d="M6 30h176" stroke="${faint}"/>
   <circle cx="18" cy="19" r="2.6" stroke="${faint}"/>
@@ -248,9 +248,11 @@ const services = (['engineering', 'ai', 'cloud', 'security'] as const).map((key)
     margin-block-start: var(--space-md);
   }
 
+  /* see WhyPartner: iOS Safari needs the ratio stated, not inferred */
   .card__art :global(svg) {
     inline-size: 100%;
     block-size: auto;
+    aspect-ratio: 260 / 132;
     max-block-size: 15rem;
     display: block;
   }
