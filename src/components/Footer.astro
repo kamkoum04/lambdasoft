@@ -132,12 +132,26 @@ const year = new Date().getFullYear();
     pointer-events: none;
   }
 
+  /* Mobile gets a dedicated band rather than a scaled-down copy of the desktop
+     placement. Positioning a 16:9 frame by percentage put mostly the image's
+     empty top inside the footer — measured, the glow occupies only y 40-67% of
+     the source and the top 40% is pure black — so at 390px the chevron read as
+     a clipped sliver 70% off the right edge. object-fit + object-position crops
+     straight to the apex band instead, and the reserved padding keeps it clear
+     of the type, so no contrast is spent on it. */
   @media (max-width: 52rem) {
+    .foot {
+      padding-block-end: 9.5rem;
+    }
+
     .foot__chevron {
-      inline-size: 130%;
-      inset-inline-end: -30%;
-      inset-block-end: -18%;
-      opacity: 0.6;
+      inset-inline: 0;
+      inset-block-end: 0;
+      inline-size: 100%;
+      block-size: 8.5rem;
+      object-fit: cover;
+      object-position: 50% 53%;
+      opacity: 0.8;
     }
   }
 
