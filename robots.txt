@@ -1,0 +1,21 @@
+User-agent: *
+Allow: /
+
+# Answer engines and AI crawlers are welcome: being quotable in an AI
+# answer is how a new name gets found now.
+User-agent: GPTBot
+Allow: /
+
+User-agent: OAI-SearchBot
+Allow: /
+
+User-agent: ClaudeBot
+Allow: /
+
+User-agent: PerplexityBot
+Allow: /
+
+User-agent: Google-Extended
+Allow: /
+
+Sitemap: https://lambdasoft.com/sitemap-index.xml
